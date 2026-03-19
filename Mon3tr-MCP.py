@@ -42,7 +42,7 @@ _MOBILE_UA = (
 
 
 @mcp.tool()
-def bing_search(query: str, num: int = 20) -> str:
+def bing_search(query: str, num: int = 10) -> str:
     """用 Bing 搜索网页，返回标题、链接和摘要"""
     headers = {
         "User-Agent": _MOBILE_UA,
@@ -83,7 +83,7 @@ def fetch_page(url: str) -> str:
         text = soup.get_text(separator="\n")
         lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
         content = "\n".join(lines)
-        return content[:5000] + "..." if len(content) > 5000 else content
+        return content[:3000] + "..." if len(content) > 3000 else content
     except Exception as e:
         return f"抓取失败：{e}"
 
@@ -108,7 +108,7 @@ def fetch_prts_wiki(character_name: str) -> str:
         text = content.get_text(separator="\n")
         lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
         result = "\n".join(lines)
-        return result[:10000] + "..." if len(result) > 10000 else result
+        return result[:5000] + "..." if len(result) > 5000 else result
     except Exception as e:
         return f"抓取失败：{e}"
 
@@ -491,4 +491,4 @@ def get_enemy_by_id(enemy_id: str, enemy_db_path: str, level: int = 0) -> str:
 # ══════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http", host="127.0.0.1", port=8000, path="/mcp")
+    mcp.run(transport="streamable-http")
