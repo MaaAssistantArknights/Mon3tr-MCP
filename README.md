@@ -76,34 +76,58 @@ mcp.run(transport="streamable-http", host="127.0.0.1", port=8000, path="/mcp")
 
 ### 关卡地图解析
 
-> 所需数据来自 [yuanyan3060/ArknightsGameResource](https://github.com/yuanyan3060/ArknightsGameResource)，
-> 关卡 JSON 位于 `gamedata/levels/` 目录下。
+> 所需数据来自 [Kengxxiao/ArknightsGameData](https://github.com/Kengxxiao/ArknightsGameData)，
+> 关卡 JSON 位于 `gamedata/levels/` 目录下。所有工具均支持本地路径和远端 URL。
 
-#### `parse_map`
-解析关卡 JSON 文件，输出文字地图、红蓝门坐标和关卡基本参数。
+#### `lookup_stage`
+通过关卡代号、名称或 stageId 查询关卡信息，返回游戏数据文件路径（可直接传给 `parse_map`）。
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| `json_file_path` | str | 关卡 JSON 文件路径，如 `levels/obt/main/level_main_01-01.json` |
+| `query` | str | 关卡代号（如 `1-7`、`CE-5`）、名称（如 `当务之急`）或 stageId（如 `main_01-07`） |
+
+输出示例：
+```
+找到 1 个匹配关卡:
+
+  关卡代号: 1-7
+  名称:     暴君
+  stageId:  main_01-07
+  地图尺寸: 11 x 7
+  数据路径: gamedata/levels/obt/main/level_main_01-07.json
+```
+
+---
+
+#### `parse_map`
+解析关卡 JSON 文件，输出文字地图、门坐标和关卡基本参数。支持本地路径、URL 或仓库相对路径（自动补全远端地址）。
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `json_file_path` | str | 关卡 JSON 路径/URL，或仓库相对路径（如 `gamedata/levels/obt/main/level_main_01-07.json`） |
 
 输出示例：
 ```
 左上角(0,0)
-    y=0 [禁][禁][高][高][高][禁][禁]
-    y=1 [红][路][路][路][路][路][蓝] <- 红门(0,1)
-    y=2 [禁][禁][高][高][高][禁][禁]
-        x=0 x=1 x=2 x=3 x=4 x=5 x=6
+    y=0 [禁][禁][禁][禁][禁][禁][飞][禁][禁][出][禁] <- 红门(6,0)
+    y=1 [蓝][路][路][路][路][不][不][路][不][不][禁]
+    y=2 [禁][高][高][高][高][高][高][装][高][高][禁]
+    ...
+        x=0  x=1  x=2  x=3  x=4  x=5  x=6  x=7  x=8  x=9  x=10
 
 图例:
 禁-禁入区 高-高台 路-可部署位 ...
 
-地图尺寸: 3 行 x 7 列
+地图尺寸: 8 行 x 11 列
 部署上限: 8 个干员
 生命值: 3
 初始费用: 10
-蓝门坐标: (6,1)
-红门坐标: (0,1)
+蓝门坐标: (4,7), (5,7), (0,1)
+红门坐标: (8,7), (9,7), (0,4), (6,0)
+飞行起点坐标: (6,0)
 ```
+
+> **推荐用法：** 先用 `lookup_stage("1-7")` 获取数据路径，再传给 `parse_map`。
 
 ---
 
@@ -129,9 +153,20 @@ mcp.run(transport="streamable-http", host="127.0.0.1", port=8000, path="/mcp")
 | 装 | 预设装置/陷阱 |
 | 蓝 | 防守点（蓝门） |
 | 红 | 敌人生成点（红门） |
+| 飞 | 飞行起点，飞行单位生成点（覆盖红门） |
 | 进 | 传送进入点 |
 | 出 | 传送离开点 |
 | 围 | 围墙，可部署围墙 |
+
+---
+
+#### `fetch_gamedata`
+从 GitHub 上的 ArknightsGameData 仓库按相对路径获取任意游戏数据文件。
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `relative_path` | str | — | 仓库内相对路径，如 `gamedata/excel/character_table.json` |
+| `max_chars` | int | 3000 | 返回内容最大字符数 |
 
 ---
 
@@ -164,20 +199,34 @@ mcp.run(transport="streamable-http", host="127.0.0.1", port=8000, path="/mcp")
 
 ## 数据来源
 
-关卡 JSON 和敌人数据库均可从以下仓库获取：
+所有游戏数据工具均支持本地路径和远端 URL。不克隆仓库也可直接使用——传入仓库相对路径即可自动从 GitHub 拉取。
+
+### 关卡 JSON / 敌人数据库
 
 ```
-https://github.com/yuanyan3060/ArknightsGameResource
+https://github.com/Kengxxiao/ArknightsGameData
 ```
 
 克隆后所需文件路径：
 ```
 ArknightsGameData/
-└── gamedata/
+└── zh_CN/gamedata/
     ├── levels/                        ← 关卡 JSON（parse_map / get_level_enemies 使用）
+    │   ├── obt/main/level_main_*.json
+    │   ├── obt/weekly/level_weekly_*.json
     │   └── enemydata/
-    │       └── enemy_database.json   ← 敌人数据库
+    │       └── enemy_database.json    ← 敌人数据库
     └── ...
 ```
+
+### 关卡代号对照表
+
+`lookup_stage` 工具使用的关卡代号/名称对照数据来自：
+
+```
+https://github.com/MaaAssistantArknights/MaaAssistantArknights
+```
+
+文件路径：`resource/Arknights-Tile-Pos/overview.json`
 
 ---
